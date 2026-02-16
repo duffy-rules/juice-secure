@@ -1,0 +1,47 @@
+name: Juice Shop DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security_pipeline:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Juice Shop
+        uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep
+        run: |
+          mkdir -p reports
+          semgrep --config=auto --json --output reports/semgrep.json
+
+      - name: Build Docker image
+        run: docker build -t juice-shop:latest .
+
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.46.2_Linux-64bit.deb
+          sudo dpkg -i trivy_0.46.2_Linux-64bit.deb
+
+      - name: Run Trivy
+        run: trivy image --format json --output reports/trivy.json juice-shop:latest
+
+      - name: Deploy container
+        run: docker run -d --name juice-shop -p 3000:3000 juice-shop:latest
+
+      - name: Run ZAP Baseline Scan
+        run: |
+          docker run --network host -t owasp/zap2docker-stable zap-baseline.py \
+          -t http://localhost:3000 -r reports/zap.html -J reports/zap.json
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: reports/
