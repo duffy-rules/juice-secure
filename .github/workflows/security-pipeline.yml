@@ -9,43 +9,103 @@ on:
 jobs:
   security_pipeline:
     runs-on: ubuntu-24.04
+
     steps:
+      # ------------------------
+      # Checkout Source Code
+      # ------------------------
       - name: Checkout Juice Shop
         uses: actions/checkout@v4
 
+      # ------------------------
+      # SAST: Semgrep
+      # ------------------------
       - name: Install Semgrep
         run: pip install semgrep
 
-      - name: Run Semgrep
+      - name: Run Semgrep (SAST)
         run: |
           mkdir -p reports
           semgrep --config=auto --json --output reports/semgrep.json
 
-      - name: Build Docker image
+      # ------------------------
+      # Build Docker Image
+      # ------------------------
+      - name: Build Juice Shop Docker image
         run: docker build -t juice-shop:latest .
 
+      # ------------------------
+      # SCA: Trivy
+      # ------------------------
       - name: Install Trivy
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
 
-
-      - name: Run Trivy
+      - name: Run Trivy (SCA)
         run: trivy image --format json --output reports/trivy.json juice-shop:latest
 
-      - name: Deploy container
+      # ------------------------
+      # Deploy Container
+      # ------------------------
+      - name: Run Juice Shop Container
         run: docker run -d --name juice-shop -p 3000:3000 juice-shop:latest
 
+      # Wait for container to be ready
+      - name: Wait for Juice Shop to start
+        run: |
+          for i in {1..15}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "Juice Shop is up"
+              break
+            fi
+            echo "Waiting for Juice Shop..."
+            sleep 2
+          done
+
+      # ------------------------
+      # DAST: ZAP Baseline Scan
+      # ------------------------
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.9.0
         with:
           target: 'http://localhost:3000'
-          cmd_options: '-J reports/zap.json -r reports/zap.html'
-          fail_action: false
-          allow_issue_writing: true
-          artifact_name: 'zap_scan'
+          format: 'json'
+          out: 'reports/zap.json'
+          report-html: 'reports/zap.html'
+          fail-action: false
 
-      - name: Upload reports
+      # ------------------------
+      # Upload Reports to GitHub Artifacts
+      # ------------------------
+      - name: Upload Security Reports
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: reports/
+
+      # ------------------------
+      # Push Reports to DefectDojo
+      # ------------------------
+      - name: Push Semgrep report to DefectDojo
+        run: |
+          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
+            -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
+            -F "scan_type=Semgrep Scan" \
+            -F "engagement_id=123" \
+            -F "file=@reports/semgrep.json"
+
+      - name: Push Trivy report to DefectDojo
+        run: |
+          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
+            -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
+            -F "scan_type=Trivy Scan" \
+            -F "engagement_id=123" \
+            -F "file=@reports/trivy.json"
+
+      - name: Push ZAP report to DefectDojo
+        run: |
+          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
+            -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
+            -F "scan_type=ZAP Scan" \
+            -F "engagement_id=123" \
+            -F "file=@reports/zap.json"
