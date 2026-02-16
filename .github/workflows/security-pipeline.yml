@@ -35,13 +35,13 @@ jobs:
       - name: Deploy container
         run: docker run -d --name juice-shop -p 3000:3000 juice-shop:latest
 
-      - name: Pull OWASP ZAP image
-        run: docker pull owasp/zap2docker-weekly:latest
+      - name: Pull ZAP stable image
+        run: docker pull zaproxy/zap-stable:sha256-4fa71edde57c35290d2fee1ca16f5dddae79de22e3390e6083e00b182ddbe27b.att
 
       - name: Run ZAP Baseline Scan
         run: |
-          docker run --network host -t owasp/zap2docker-weekly:latest zap-baseline.py \
-          -t http://localhost:3000 -r reports/zap.html -J reports/zap.json
+          docker run --network host -t zaproxy/zap-stable@sha256:4fa71edde57c35290d2fee1ca16f5dddae79de22e3390e6083e00b182ddbe27b.att \
+          zap-baseline.py -t http://localhost:3000 -r reports/zap.html -J reports/zap.json
 
       - name: Upload reports
         uses: actions/upload-artifact@v4
