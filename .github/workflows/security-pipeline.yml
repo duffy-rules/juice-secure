@@ -36,11 +36,13 @@ jobs:
         run: docker run -d --name juice-shop -p 3000:3000 juice-shop:latest
 
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.8.1
+        uses: zaproxy/action-baseline@v0.9.0
         with:
           target: 'http://localhost:3000'
-          format: 'json'
-          output: 'reports/zap.json'
+          cmd_options: '-J reports/zap.json -r reports/zap.html'
+          fail_action: false
+          allow_issue_writing: true
+          artifact_name: 'zap_scan'
 
       - name: Upload reports
         uses: actions/upload-artifact@v4
