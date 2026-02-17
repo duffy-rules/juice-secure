@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       #------------------------
-      # Prepare Workspace
+      # Prepare Workspace dir
       #------------------------
       - name: Create reports directory
         run: mkdir -p reports
