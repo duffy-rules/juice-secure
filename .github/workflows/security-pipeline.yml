@@ -83,6 +83,7 @@ jobs:
         run: |
           docker run --rm \
             --network=host \
+            --user root \
             -v ${{ github.workspace }}:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
@@ -94,6 +95,15 @@ jobs:
               -a
       - name: Verify ZAP Report
         run: ls -la reports
+
+      #------------------------
+      # Debug ZAP report
+      #------------------------
+      - name: Debug permissions
+        run: |
+          ls -la
+          ls -la reports
+
 
       # ------------------------
       # Upload Reports to GitHub Artifacts
