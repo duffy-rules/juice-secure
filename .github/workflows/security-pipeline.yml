@@ -14,8 +14,14 @@ jobs:
       # ------------------------
       # Checkout Source Code
       # ------------------------
-      - name: Checkout Juice Shop
+      - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      #------------------------
+      # Prepare Workspace
+      #------------------------
+      - name: Create reports directory
+        run: mkdir -p reports
 
       # ------------------------
       # SAST: Semgrep
@@ -23,10 +29,14 @@ jobs:
       - name: Install Semgrep
         run: pip install semgrep
 
-      - name: Run Semgrep (SAST)
+      - name: Run Semgrep Scan
         run: |
-          mkdir -p reports
-          semgrep --config=auto --json --output reports/semgrep.json
+          semgrep --config=auto \
+                  --json \
+                  --output reports/semgrep.json
+
+      - name: Verify Semgrep Report
+        run: ls -la reports
 
       # ------------------------
       # Build Docker Image
@@ -39,10 +49,14 @@ jobs:
       # ------------------------
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+          | sudo sh -s -- -b /usr/local/bin
 
       - name: Run Trivy (SCA)
-        run: trivy image --format json --output reports/trivy.json juice-shop:latest
+        run: |
+          trivy image juice-shop:latest \
+            --format json \
+            --output reports/trivy.json
 
       # ------------------------
       # Deploy Container
@@ -53,27 +67,33 @@ jobs:
       # Wait for container to be ready
       - name: Wait for Juice Shop to start
         run: |
-          for i in {1..15}; do
+          for i in {1..20}; do
             if curl -s http://localhost:3000 > /dev/null; then
               echo "Juice Shop is up"
               break
             fi
             echo "Waiting for Juice Shop..."
-            sleep 2
+            sleep 3
           done
 
       # ------------------------
       # DAST: ZAP Baseline Scan
       # ------------------------
-      - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.9.0
-        with:
-          target: 'http://localhost:3000'
-          format: 'json'
-          output: 'reports/zap.json'
-          working-directory: .
-          cmd_options: '-J reports/zap.json -r reports/zap.html'
-          fail-action: false
+      - name: Run ZAP Baseline Scan
+        run: |
+          docker run --rm \
+            --network=host \
+            -v ${{ github.workspace }}:/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t http://localhost:3000 \
+              -J reports/zap.json \
+              -r reports/zap.html \
+              -w reports/zap.md \
+              -m 5 \
+              -a
+      - name: Verify ZAP Report
+        run: ls -la reports
 
       # ------------------------
       # Upload Reports to GitHub Artifacts
