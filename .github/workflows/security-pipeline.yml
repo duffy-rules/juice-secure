@@ -70,8 +70,9 @@ jobs:
         with:
           target: 'http://localhost:3000'
           format: 'json'
-          out: 'reports/zap.json'
-          report-html: 'reports/zap.html'
+          output: 'reports/zap.json'
+          working-directory: .
+          cmd_options: '-J reports/zap.json -r reports/zap.html'
           fail-action: false
 
       # ------------------------
