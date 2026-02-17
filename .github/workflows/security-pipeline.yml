@@ -136,7 +136,7 @@ jobs:
             -H "accept: application/json" \
             -H "Content-Type: multipart/form-data" \
             -F "scan_type=Semgrep Scan" \
-            -F "file=@reports/semgrep-report.json" \
+            -F "file=@reports/semgrep.json" \
             -F "engagement=1" \
             -F "active=true" \
             -F "verified=false"
@@ -148,7 +148,7 @@ jobs:
             -H "accept: application/json" \
             -H "Content-Type: multipart/form-data" \
             -F "scan_type=Trivy Scan" \
-            -F "file=@reports/trivy-report.json" \
+            -F "file=@reports/trivy.json" \
             -F "engagement=1" \
             -F "active=true" \
             -F "verified=false"
