@@ -135,7 +135,7 @@ jobs:
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
             -H "accept: application/json" \
             -H "Content-Type: multipart/form-data" \
-            -F "scan_type=Semgrep" \
+            -F "scan_type=Semgrep JSON Report" \
             -F "file=@reports/semgrep.json" \
             -F "engagement=1" \
             -F "active=true" \
