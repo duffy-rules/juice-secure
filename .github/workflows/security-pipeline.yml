@@ -117,26 +117,15 @@ jobs:
       # ------------------------
       # Push Reports to DefectDojo
       # ------------------------
-      - name: Push Semgrep report to DefectDojo
+      - name: Upload ZAP to DefectDojo
         run: |
-          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
+          curl -X POST "${{ secrets.DEFECTDOJO_URL }}/api/v2/import-scan/" \
             -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
-            -F "scan_type=Semgrep Scan" \
-            -F "engagement_id=123" \
-            -F "file=@reports/semgrep.json"
-
-      - name: Push Trivy report to DefectDojo
-        run: |
-          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
-            -F "scan_type=Trivy Scan" \
-            -F "engagement_id=123" \
-            -F "file=@reports/trivy.json"
-
-      - name: Push ZAP report to DefectDojo
-        run: |
-          curl -X POST "https://defectdojo.example.com/api/v2/import-scan/" \
-            -H "Authorization: Token ${{ secrets.DEFECTDOJO_API_KEY }}" \
+            -H "accept: application/json" \
+            -H "Content-Type: multipart/form-data" \
             -F "scan_type=ZAP Scan" \
-            -F "engagement_id=123" \
-            -F "file=@reports/zap.json"
+            -F "file=@reports/zap-report.xml" \
+            -F "engagement=1" \
+            -F "active=true" \
+            -F "verified=false"
+
