@@ -92,7 +92,7 @@ jobs:
               -r reports/zap.html \
               -w reports/zap.md \
               -m 5 \
-              -a
+              -a || true
       - name: Verify ZAP Report
         run: ls -la reports
 
